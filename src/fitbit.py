@@ -51,11 +51,8 @@ class FoodLogParams(BaseModel):
 
 
 class Fitbit:
-    def __init__(
-        self, client_id: str, client_secret: str, access_token: str, refresh_token: str
-    ):
+    def __init__(self, client_id: str, access_token: str, refresh_token: str):
         self._client_id = client_id
-        self._client_secret = client_secret
         self._access_token = access_token
         self._refresh_token = refresh_token
 
@@ -85,18 +82,14 @@ class Fitbit:
 
         return response.json()
 
-    def refresh_access_token(self, client_id: str, client_secret: str) -> dict:
+    def refresh_access_token(self) -> dict:
         url = f"{FITBIT_API_URL}/oauth2/token"
-        authorization = base64.b64encode(
-            f"{client_id}:{client_secret}".encode()
-        ).decode()
         headers = {
             "Content-Type": "application/x-www-form-urlencoded",
-            "Authorization": f"Basic {authorization}",
             "Accept": "application/json",
         }
         body = {
-            "client_id": client_id,
+            "client_id": self.client_id,
             "grant_type": "refresh_token",
             "refresh_token": self._refresh_token,
         }
