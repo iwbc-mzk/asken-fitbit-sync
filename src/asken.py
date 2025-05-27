@@ -99,6 +99,9 @@ class Asken:
         response.raise_for_status()  # Check if the request was successful
         soup = BeautifulSoup(response.text, "html.parser")
 
+        nutritions = {"date": date, "meal_type_id": meal_type_id}
+        nutritions_ele = soup.find_all("li", class_="line_left")
+        for nutrition_ele in nutritions_ele:
             nutrition_name = nutrition_ele.find("li", class_="title").text.strip()
             nutrition_value = nutrition_ele.find("li", class_="val").text.strip()
 
