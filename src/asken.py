@@ -10,8 +10,8 @@ from models.asken import FoodLog
 
 class Asken:
     def __init__(self, email: str, password: str):
+        self._url = "https://www.asken.jp"
         self._session = self.login(email, password)
-        self.url = "https://www.asken.jp"
 
     @staticmethod
     def _headers() -> dict:
@@ -24,7 +24,7 @@ class Asken:
     def login(self, email: str, password: str) -> requests.Session:
         """Login to Asken and return a session."""
 
-        login_url = f"{self.url}/login/"
+        login_url = f"{self._url}/login/"
         session = requests.Session()
 
         payload = {
@@ -68,14 +68,14 @@ class Asken:
             FoodLog: Parsed food log data.
         """
         advice_url = (
-            f"{self.url}/wsp/advice/{date}/{MEAL_TYPES[meal_type_id]['asken_id']}"
+            f"{self._url}/wsp/advice/{date}/{MEAL_TYPES[meal_type_id]['asken_id']}"
         )
-        response = self.session.get(url=advice_url, headers=self._headers())
+        response = self._session.get(url=advice_url, headers=self._headers())
         response.raise_for_status()
 
         html = response.text
         if "食事記録が無いためアドバイスが計算できません" in html:
-            return self.url(**{"date": date, "meal_type_id": meal_type_id})
+            return self._url(**{"date": date, "meal_type_id": meal_type_id})
 
         nutritions = self._scrape_food_log(html)
         nutritions["meal_type_id"] = meal_type_id
@@ -94,8 +94,8 @@ class Asken:
         Returns:
             FoodLog: Parsed food log data.
         """
-        advice_url = f"{self.url}/wsp/advice/{date}"
-        response = self.session.get(url=advice_url, headers=self._headers())
+        advice_url = f"{self._url}/wsp/advice/{date}"
+        response = self._session.get(url=advice_url, headers=self._headers())
         response.raise_for_status()
 
         html = response.text
