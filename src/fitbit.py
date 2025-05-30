@@ -1,6 +1,6 @@
 import requests
 
-from src.models.fitbit import (
+from models.fitbit import (
     GetFoodLogResponse,
     UpdateFoodLogParams,
     CreateFoodLogParams,
@@ -70,7 +70,7 @@ class Fitbit:
             "Accept": "application/json",
         }
         body = {
-            "client_id": self.client_id,
+            "client_id": self._client_id,
             "grant_type": "refresh_token",
             "refresh_token": self._refresh_token,
         }
