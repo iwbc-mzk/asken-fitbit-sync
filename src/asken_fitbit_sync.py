@@ -4,6 +4,10 @@ from asken import Asken, FoodLog
 from fitbit import Fitbit
 from const import MEAL_TYPES
 from models.fitbit import CreateFoodLogParams
+from utils import get_logger
+
+
+logger = get_logger(__name__)
 
 
 class AskenFitbitSync:
@@ -26,7 +30,7 @@ class AskenFitbitSync:
         for meal_type_id in meal_type_id_list:
             meal: FoodLog = self._asken.fetch_food_log(date, meal_type_id)
             if not meal or not meal.logged:
-                print(
+                logger.info(
                     f"No food log found for date {date} and meal type {meal_type_id}."
                 )
                 continue
@@ -45,10 +49,10 @@ class AskenFitbitSync:
             # updateではPFC情報が更新できないため、削除して再登録
             if is_registered:
                 if registered_log.calories != meal.calories:
-                    print(f"Delete {MEAL_TYPES[meal_type_id]['name']} on {date}")
+                    logger.info(f"Delete {MEAL_TYPES[meal_type_id]['name']} on {date}")
                     self._fitbit.delete_food_log(food_log_id)
                 else:
-                    print(
+                    logger.info(
                         f"Already registered {MEAL_TYPES[meal_type_id]['name']} on {date}"
                     )
                     continue
@@ -68,7 +72,7 @@ class AskenFitbitSync:
             )
 
             res = self._fitbit.create_food_log(params)
-            print(f"Create {MEAL_TYPES[meal_type_id]['name']} on {date}")
+            logger.info(f"Create {MEAL_TYPES[meal_type_id]['name']} on {date}")
 
     def sync_weight(
         self, date: str, weight: float, body_fat: Optional[float] = None

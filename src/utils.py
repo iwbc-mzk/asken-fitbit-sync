@@ -1,3 +1,9 @@
+import logging
+from logging import config
+import os
+
+import yaml
+
 from const import UNITS
 
 
@@ -11,10 +17,25 @@ def salt_g_to_sodium_mg(salt: float) -> float:
 
 def remove_unit(nutrition_value: str) -> float:
     """Remove unit from nutrition value and convert to float."""
-    # 単位削除処理で上から順に一致を確認するので接頭辞付きを上に記載する
 
     for unit in UNITS:
         if nutrition_value.endswith(unit):
             return float(nutrition_value[: -UNITS[unit]["word_cnt"]].strip())
 
     return float(nutrition_value)
+
+
+def get_logger(name: str) -> logging.Logger:
+    """Get a logger with the specified name."""
+
+    if not logging.getHandlerNames():
+        conf_file = (
+            "logging.conf.prd.yaml"
+            if os.environ.get("ENV") == "production"
+            else "logging.conf.dev.yaml"
+        )
+        with open(conf_file, "r") as f:
+            conf = yaml.safe_load(f.read())
+            config.dictConfig(conf)
+
+    return logging.getLogger(name)

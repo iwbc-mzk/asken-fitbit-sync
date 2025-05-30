@@ -5,6 +5,10 @@ from models.fitbit import (
     UpdateFoodLogParams,
     CreateFoodLogParams,
 )
+from utils import get_logger
+
+
+logger = get_logger(__name__)
 
 
 class Fitbit:

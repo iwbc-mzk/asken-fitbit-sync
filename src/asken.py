@@ -3,9 +3,12 @@ from typing import Optional
 from bs4 import BeautifulSoup
 import requests
 
-from utils import remove_unit
+from utils import remove_unit, get_logger
 from const import MEAL_TYPES, NUTRITIONS
 from models.asken import FoodLog
+
+
+logger = get_logger(__name__)
 
 
 class Asken:
@@ -39,6 +42,8 @@ class Asken:
 
         response = session.post(login_url, headers=self._headers(), data=payload)
         response.raise_for_status()  # Check if the request was successful
+
+        logger.info("Logged in to Asken successfully.")
 
         return session
 
