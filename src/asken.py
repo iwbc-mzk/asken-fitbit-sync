@@ -1,63 +1,17 @@
 from typing import Optional
 
 from bs4 import BeautifulSoup
-from pydantic import BaseModel
 import requests
 
 from utils import remove_unit
-from const import MEAL_TYPES
-
-
-ASKEN_URL = "https://www.asken.jp"
-
-
-class FoodLog(BaseModel):
-    date: str
-    meal_type_id: int
-    calories: float = 0.0  # カロリー(kcal)
-    protein: float = 0.0  # タンパク質(g)
-    fat: float = 0.0  # 脂質(g)
-    carbs: float = 0.0  # 炭水化物(g)
-    calcium: float = 0.0  # カルシウム(mg)
-    magnesium: float = 0.0  # マグネシウム(mg)
-    iron: float = 0.0  # 鉄分(mg)
-    zinc: float = 0.0  # 亜鉛(mg)
-    vitamin_a: float = 0.0  # ビタミンA(μg)
-    vitamin_d: float = 0.0  # ビタミンD(μg)
-    vitamin_b1: float = 0.0  # ビタミンB1(mg)
-    vitamin_b2: float = 0.0  # ビタミンB2(mg)
-    vitamin_b6: float = 0.0  # ビタミンB6(mg)
-    vitamin_c: float = 0.0  # ビタミンC(mg)
-    fiber: float = 0.0  # 食物繊維(g)
-    saturatedFat: float = 0.0  # 飽和脂肪酸(g)
-    solt: float = 0.0  # 食塩相当量(g)
-    logged: bool = False  # 食事記録が登録済かどうか
-
-
-NUTRITIONS = {
-    "エネルギー": "calories",
-    "タンパク質": "protein",
-    "脂質": "fat",
-    "炭水化物": "carbs",
-    "カルシウム": "calcium",
-    "マグネシウム": "magnesium",
-    "鉄": "iron",
-    "亜鉛": "zinc",
-    "ビタミンA": "vitamin_a",
-    "ビタミンD": "vitamin_d",
-    "ビタミンB1": "vitamin_b1",
-    "ビタミンB2": "vitamin_b2",
-    "ビタミンB6": "vitamin_b6",
-    "ビタミンC": "vitamin_c",
-    "食物繊維": "fiber",
-    "飽和脂肪酸": "saturatedFat",
-    "塩分": "solt",
-}
+from const import MEAL_TYPES, NUTRITIONS
+from models.asken import FoodLog
 
 
 class Asken:
     def __init__(self, email: str, password: str):
-        self.session = self.login(email, password)
+        self._session = self.login(email, password)
+        self.url = "https://www.asken.jp"
 
     @staticmethod
     def _headers() -> dict:
@@ -70,7 +24,7 @@ class Asken:
     def login(self, email: str, password: str) -> requests.Session:
         """Login to Asken and return a session."""
 
-        login_url = f"{ASKEN_URL}/login/"
+        login_url = f"{self.url}/login/"
         session = requests.Session()
 
         payload = {
@@ -114,14 +68,14 @@ class Asken:
             FoodLog: Parsed food log data.
         """
         advice_url = (
-            f"{ASKEN_URL}/wsp/advice/{date}/{MEAL_TYPES[meal_type_id]['asken_id']}"
+            f"{self.url}/wsp/advice/{date}/{MEAL_TYPES[meal_type_id]['asken_id']}"
         )
         response = self.session.get(url=advice_url, headers=self._headers())
         response.raise_for_status()
 
         html = response.text
         if "食事記録が無いためアドバイスが計算できません" in html:
-            return FoodLog(**{"date": date, "meal_type_id": meal_type_id})
+            return self.url(**{"date": date, "meal_type_id": meal_type_id})
 
         nutritions = self._scrape_food_log(html)
         nutritions["meal_type_id"] = meal_type_id
@@ -140,7 +94,7 @@ class Asken:
         Returns:
             FoodLog: Parsed food log data.
         """
-        advice_url = f"{ASKEN_URL}/wsp/advice/{date}"
+        advice_url = f"{self.url}/wsp/advice/{date}"
         response = self.session.get(url=advice_url, headers=self._headers())
         response.raise_for_status()
 

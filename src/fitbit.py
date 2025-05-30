@@ -5,7 +5,6 @@ from models.fitbit import (
     UpdateFoodLogParams,
     CreateFoodLogParams,
 )
-from const import FITBIT_API_URL
 
 
 class Fitbit:
@@ -13,9 +12,10 @@ class Fitbit:
         self._client_id = client_id
         self._access_token = access_token
         self._refresh_token = refresh_token
+        self.url = "https://api.fitbit.com"
 
     def fetch_food_log(self, date: str) -> GetFoodLogResponse:
-        url = f"{FITBIT_API_URL}/1/user/-/foods/log/date/{date}.json"
+        url = f"{self.url}/1/user/-/foods/log/date/{date}.json"
         headers = {
             "Authorization": f"Bearer {self._access_token}",
             "Accept": "application/json",
@@ -28,7 +28,7 @@ class Fitbit:
         return GetFoodLogResponse(**response.json())
 
     def create_food_log(self, params: CreateFoodLogParams) -> dict:
-        url = f"{FITBIT_API_URL}/1/user/-/foods/log.json"
+        url = f"{self.url}/1/user/-/foods/log.json"
         headers = {
             "Authorization": f"Bearer {self._access_token}",
             "Accept": "application/json",
@@ -41,7 +41,7 @@ class Fitbit:
         return response.json()
 
     def update_food_log(self, food_log_id: int, params: UpdateFoodLogParams) -> dict:
-        url = f"{FITBIT_API_URL}/1/user/-/foods/log/{food_log_id}.json"
+        url = f"{self.url}/1/user/-/foods/log/{food_log_id}.json"
         headers = {
             "Authorization": f"Bearer {self._access_token}",
             "Accept": "application/json",
@@ -53,7 +53,7 @@ class Fitbit:
         return response.json()
 
     def delete_food_log(self, food_log_id: int) -> requests.Response:
-        url = f"{FITBIT_API_URL}/1/user/-/foods/log/{food_log_id}.json"
+        url = f"{self.url}/1/user/-/foods/log/{food_log_id}.json"
         headers = {
             "Authorization": f"Bearer {self._access_token}",
             "Accept": "application/json",
@@ -64,7 +64,7 @@ class Fitbit:
         return response
 
     def refresh_access_token(self) -> dict:
-        url = f"{FITBIT_API_URL}/oauth2/token"
+        url = f"{self.url}/oauth2/token"
         headers = {
             "Content-Type": "application/x-www-form-urlencoded",
             "Accept": "application/json",
