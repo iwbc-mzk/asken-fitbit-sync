@@ -29,7 +29,7 @@ class AskenFitbitSync:
                 print(
                     f"No food log found for date {date} and meal type {meal_type_id}."
                 )
-                return
+                continue
 
             is_registered = False
 
@@ -51,7 +51,7 @@ class AskenFitbitSync:
                     print(
                         f"Already registered {MEAL_TYPES[meal_type_id]['name']} on {date}"
                     )
-                    return
+                    continue
 
             params = CreateFoodLogParams(
                 **{
