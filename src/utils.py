@@ -30,7 +30,7 @@ def get_logger(name: str) -> logging.Logger:
 
     if not logging.getHandlerNames():
         conf_file = (
-            "src/logging.conf.prd.yaml"
+            "logging.conf.prd.yaml"
             if os.environ.get("ENV") == "production"
             else "logging.conf.dev.yaml"
         )
