@@ -1,0 +1,71 @@
+name: Deploy to AWS Lambda
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pipenv
+
+      # --- Lambda Layer 作成用: ライブラリをlayerディレクトリにインストール ---
+      # --- 参考: https://docs.aws.amazon.com/lambda/latest/dg/python-package.html#python-package-native-libraries:~:text=Working%20with%20built%20distributions%20(wheels) ---
+      - name: Install requirements for Lambda Layer
+        run: |
+          mkdir -p layer
+          pipenv install -t layer --platform manylinux2014_x86_64 --implementation cp --python-version 3.13 --only-binary=:all: --upgrade
+
+      - name: Zip Lambda Layer
+        run: |
+          zip -r lambda_layer.zip layer
+
+      # --- Lambda関数用: コードをzip ---
+      - name: Zip source code
+        run: |
+          zip -r lambda_function.zip src
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION}}
+
+      # --- Lambda Layerのアップロード ---
+      - name: Publish Lambda Layer
+        id: publish_layer
+        run: |
+          LAYER_VERSION=$(aws lambda publish-layer-version \
+            --layer-name ${{ env.AWS_LAMBDA_LAYER_NAME}} \
+            --zip-file fileb://lambda_layer.zip \
+            --compatible-runtimes python3.13 \
+            --query 'Version' --output text)
+          echo "LAYER_VERSION=$LAYER_VERSION" >> $GITHUB_ENV
+
+      # --- Lambda関数のデプロイ ---
+      - name: Deploy to Lambda
+        run: |
+          aws lambda update-function-code \
+            --function-name ${{ env.AWS_LAMBDA_FUNCTION_NAME}} \
+            --zip-file fileb://lambda_function.zip
+
+      # --- Lambda関数にLayerをアタッチ ---
+      - name: Update Lambda function to use new Layer
+        run: |
+          aws lambda update-function-configuration \
+            --function-name ${{ env.AWS_LAMBDA_FUNCTION_NAME}} \
+            --layers arn:aws:lambda:${{ secrets.AWS_REGION}}:${{ secrets.AWS_ACCOUNT_ID }}:layer:${{ env.AWS_LAMBDA_LAYER_NAME}}:$LAYER_VERSION
