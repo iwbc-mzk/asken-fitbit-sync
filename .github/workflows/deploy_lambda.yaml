@@ -45,6 +45,7 @@ jobs:
         run: |
           cd src
           zip -r lambda_function.zip *
+          mv lambda_function.zip ../lambda_function.zip
 
       # --- AWS 認証 ---
       # https://zenn.dev/azunyan/articles/072b9644c17be9
