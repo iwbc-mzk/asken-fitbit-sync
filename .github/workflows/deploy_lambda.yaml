@@ -22,13 +22,14 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install pipenv
+          pipenv requirements > requirements.txt
 
       # --- Lambda Layer 作成用: ライブラリをlayerディレクトリにインストール ---
       # --- 参考: https://docs.aws.amazon.com/lambda/latest/dg/python-package.html#python-package-native-libraries:~:text=Working%20with%20built%20distributions%20(wheels) ---
       - name: Install requirements for Lambda Layer
         run: |
           mkdir -p layer
-          pipenv install -t layer --platform manylinux2014_x86_64 --implementation cp --python-version 3.13 --only-binary=:all: --upgrade
+          pip install -r requirements.txt -t layer --platform manylinux2014_x86_64 --implementation cp --python-version 3.13 --only-binary=:all: --upgrade
 
       - name: Zip Lambda Layer
         run: |
