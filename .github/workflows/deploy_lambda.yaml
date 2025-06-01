@@ -32,12 +32,12 @@ jobs:
       # 参考: https://docs.aws.amazon.com/lambda/latest/dg/python-package.html#python-package-native-libraries:~:text=Working%20with%20built%20distributions%20(wheels)
       - name: Install requirements for Lambda Layer
         run: |
-          mkdir -p layer
-          pip install -r requirements.txt -t layer --platform manylinux2014_x86_64 --implementation cp --python-version 3.13 --only-binary=:all: --upgrade
+          mkdir -p python
+          pip install -r requirements.txt -t python --platform manylinux2014_x86_64 --implementation cp --python-version 3.13 --only-binary=:all: --upgrade
 
       - name: Zip Lambda Layer
         run: |
-          zip -r lambda_layer.zip layer
+          zip -r lambda_layer.zip python
 
       # --- Lambda関数用: コードをzip ---
       # 解凍時にsrcフォルダは必要ないので、srcフォルダに移動してからzip化する
@@ -79,4 +79,4 @@ jobs:
         run: |
           aws lambda update-function-configuration \
             --function-name ${{ vars.AWS_LAMBDA_FUNCTION_NAME}} \
-            --layers arn:aws:lambda:${{ secrets.AWS_REGION}}:${{ secrets.AWS_ACCOUNT_ID }}:layer:${{ vars.AWS_LAMBDA_LAYER_NAME}}:$LAYER_VERSION
+            --layers arn:aws:lambda:${{ secrets.AWS_REGION }}:${{ secrets.AWS_ACCOUNT_ID }}:layer:${{ vars.AWS_LAMBDA_LAYER_NAME}}:$LAYER_VERSION
