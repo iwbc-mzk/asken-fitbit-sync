@@ -1,7 +1,11 @@
 from typing import Optional
 import json
+from datetime import datetime
+import copy
 
 import requests
+import boto3
+from botocore.exceptions import ClientError
 
 from asken import Asken
 from fitbit import Fitbit
@@ -9,9 +13,26 @@ from asken_fitbit_sync import AskenFitbitSync
 from const import DAILY_MEAL_TYPE_ID_LIST
 from utils import get_logger
 
-CREDENCIALS_PATH = ".env"
 
 logger = get_logger(__name__)
+
+
+def get_secret_manager_client():
+    session = boto3.session.Session()
+    return session.client(service_name="secretsmanager", region_name="ap-northeast-1")
+
+
+def get_secret():
+    client = get_secret_manager_client()
+
+    try:
+        get_secret_value_response = client.get_secret_value(SecretId="askenFitbitSync")
+    except ClientError as e:
+        # For a list of exceptions thrown, see
+        # https://docs.aws.amazon.com/secretsmanager/latest/apireference/API_GetSecretValue.html
+        raise e
+
+    return json.loads(get_secret_value_response["SecretString"])
 
 
 def retry_after_refresh_token(func):
@@ -22,14 +43,19 @@ def retry_after_refresh_token(func):
             if e.response.status_code == 401:
                 logger.warning("Access token expired, refreshing...")
 
+                client = get_secret_manager_client()
+
                 fitbit = Fitbit(
                     kwargs["client_id"], kwargs["access_token"], kwargs["refresh_token"]
                 )
                 response = fitbit.refresh_access_token()
                 kwargs["access_token"] = response["access_token"]
                 kwargs["refresh_token"] = response["refresh_token"]
-                json.dump(
-                    kwargs, open(CREDENCIALS_PATH, "w"), indent=4, ensure_ascii=False
+
+                secrets = copy.deepcopy(kwargs)
+                del secrets["date"]
+                client.update_secret(
+                    SecretId="askenFitbitSync", SecretString=json.dumps(secrets)
                 )
 
                 logger.info("Access token refreshed successfully.")
@@ -61,19 +87,19 @@ def main(
     logger.info(f"Food logs synced successfully for date: {date}")
 
 
-if __name__ == "__main__":
+def lambda_handler(event, context):
     logger.info("Starting Asken-Fitbit sync...")
 
-    credencials = json.load(open(CREDENCIALS_PATH, "r"))
-    date = "2025-05-30"
+    date = event.get("date", datetime.now().strftime("%Y-%m-%d"))
+    credencials = get_secret()
     try:
         main(
             date=date,
-            mail=credencials["asken_mail"],
-            password=credencials["asken_password"],
-            client_id=credencials["fitbit_client_id"],
-            access_token=credencials["fitbit_access_token"],
-            refresh_token=credencials["fitbit_refresh_token"],
+            mail=credencials["mail"],
+            password=credencials["password"],
+            client_id=credencials["client_id"],
+            access_token=credencials["access_token"],
+            refresh_token=credencials["refresh_token"],
         )
     except requests.exceptions.RequestException as e:
         logger.error(f"An error occurred: {e}")

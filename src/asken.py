@@ -75,12 +75,13 @@ class Asken:
         advice_url = (
             f"{self._url}/wsp/advice/{date}/{MEAL_TYPES[meal_type_id]['asken_id']}"
         )
+
         response = self._session.get(url=advice_url, headers=self._headers())
         response.raise_for_status()
 
         html = response.text
         if "食事記録が無いためアドバイスが計算できません" in html:
-            return self._url(**{"date": date, "meal_type_id": meal_type_id})
+            return None
 
         nutritions = self._scrape_food_log(html)
         nutritions["meal_type_id"] = meal_type_id
@@ -126,8 +127,12 @@ class Asken:
         """
         nutritions = self.fetch_daily_food_log(date).model_dump()
         nutritions["meal_type_id"] = 4  # Set meal type ID for snack log
+
         for meal_type_id in [1, 2, 3]:
-            one_meal_log = self.fetch_one_meal_log(date, meal_type_id).model_dump()
+            one_meal_log = self.fetch_one_meal_log(date, meal_type_id)
+            if one_meal_log is None:
+                continue
+            one_meal_log = one_meal_log.model_dump()
             nutritions["calories"] -= one_meal_log["calories"]
             nutritions["protein"] -= one_meal_log["protein"]
             nutritions["fat"] -= one_meal_log["fat"]
@@ -146,7 +151,15 @@ class Asken:
             nutritions["saturatedFat"] -= one_meal_log["saturatedFat"]
             nutritions["solt"] -= one_meal_log["solt"]
 
-        return FoodLog(**nutritions)
+        # カロリーまたはPFCが登録されていれば間食ログあり
+        exists_log = (
+            round(nutritions["calories"], 3)
+            or round(nutritions["protein"], 3)
+            or round(nutritions["fat"], 3)
+            or round(nutritions["carbs"], 3)
+        )
+
+        return FoodLog(**nutritions) if exists_log else None
 
     def _scrape_food_log(self, html: str) -> dict:
         """
