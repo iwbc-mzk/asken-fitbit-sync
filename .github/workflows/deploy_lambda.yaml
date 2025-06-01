@@ -29,7 +29,7 @@ jobs:
           pipenv requirements > requirements.txt
 
       # --- Lambda Layer 作成用: ライブラリをlayerディレクトリにインストール ---
-      # --- 参考: https://docs.aws.amazon.com/lambda/latest/dg/python-package.html#python-package-native-libraries:~:text=Working%20with%20built%20distributions%20(wheels) ---
+      # 参考: https://docs.aws.amazon.com/lambda/latest/dg/python-package.html#python-package-native-libraries:~:text=Working%20with%20built%20distributions%20(wheels)
       - name: Install requirements for Lambda Layer
         run: |
           mkdir -p layer
@@ -40,13 +40,15 @@ jobs:
           zip -r lambda_layer.zip layer
 
       # --- Lambda関数用: コードをzip ---
+      # 解凍時にsrcフォルダは必要ないので、srcフォルダに移動してからzip化する
       - name: Zip source code
         run: |
-          zip -r lambda_function.zip src
+          cd src
+          zip -r lambda_function.zip *
 
       # --- AWS 認証 ---
-      # --- https://zenn.dev/azunyan/articles/072b9644c17be9 ---
-      # --- https://docs.github.com/ja/actions/security-for-github-actions/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services ---
+      # https://zenn.dev/azunyan/articles/072b9644c17be9
+      # https://docs.github.com/ja/actions/security-for-github-actions/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
