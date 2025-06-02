@@ -101,12 +101,12 @@ class AskenFitbitSync:
             meal_type_id_list (list[int]): List of meal type IDs to sync. Defaults to [1, 2, 3, 4] (朝食, 昼食, 夕食, 間食).
         """
 
-        food_logs: GetFoodLogResponse = self._fitbit.fetch_food_log(date)
+        food_logs: GetFoodLogResponse = self.fetch_fitbit_food_log(date)
         if not food_logs:
             return
 
         for meal_type_id in meal_type_id_list:
-            meal: FoodLog = self._asken.fetch_food_log(date, meal_type_id)
+            meal: FoodLog = self.fetch_asken_food_log(date, meal_type_id)
             if not meal or not meal.logged:
                 logger.info(
                     f"No food log found for date {date} and meal type {meal_type_id}."
@@ -127,7 +127,7 @@ class AskenFitbitSync:
             if is_registered:
                 if registered_log.calories != meal.calories:
                     logger.info(f"Delete {MEAL_TYPES[meal_type_id]['name']} on {date}")
-                    res = self._fitbit.delete_food_log(food_log_id)
+                    res = self.delete_fitbit_food_log(food_log_id)
                     if not res:
                         continue
                 else:
@@ -150,7 +150,7 @@ class AskenFitbitSync:
                 }
             )
 
-            res = self._fitbit.create_food_log(params)
+            res = self.create_fitbit_food_log(params)
             if not res:
                 continue
 
