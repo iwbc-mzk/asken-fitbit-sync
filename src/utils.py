@@ -4,7 +4,7 @@ import os
 
 import yaml
 
-from const import UNITS
+from .const import UNITS
 
 
 def micrograms_to_iu(mcg: float) -> float:
@@ -30,9 +30,9 @@ def get_logger(name: str) -> logging.Logger:
 
     if not logging.getHandlerNames():
         conf_file = (
-            "logging.conf.prd.yaml"
+            r"./src/logging.conf.prd.yaml"
             if os.environ.get("ENV") == "production"
-            else "logging.conf.dev.yaml"
+            else r"./src/logging.conf.dev.yaml"
         )
         with open(conf_file, "r") as f:
             conf = yaml.safe_load(f.read())

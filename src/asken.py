@@ -3,9 +3,9 @@ from typing import Optional
 from bs4 import BeautifulSoup
 import requests
 
-from utils import remove_unit, get_logger
-from const import MEAL_TYPES, NUTRITIONS
-from models.asken import FoodLog
+from .utils import remove_unit, get_logger
+from .const import MEAL_TYPES, NUTRITIONS
+from .models.asken import FoodLog
 
 
 logger = get_logger(__name__)

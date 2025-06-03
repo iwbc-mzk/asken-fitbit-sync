@@ -1,11 +1,11 @@
 import requests
 
-from models.fitbit import (
+from .models.fitbit import (
     GetFoodLogResponse,
     UpdateFoodLogParams,
     CreateFoodLogParams,
 )
-from utils import get_logger
+from .utils import get_logger
 
 
 logger = get_logger(__name__)
