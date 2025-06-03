@@ -4,7 +4,12 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
-
+        {
+            "name": "Create Lambda Layer",
+            "type": "PowerShell",
+            "request": "launch",
+            "script": "pipenv requirements > requirements.txt; pip install -r requirements.txt -t .layer/python --platform manylinux2014_x86_64 --implementation cp --python-version 3.13 --only-binary=:all: --upgrade; rm requirements.txt"
+        },
         {
             "name": "Docker Start",
             "type": "PowerShell",
