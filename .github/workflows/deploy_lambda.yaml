@@ -40,12 +40,9 @@ jobs:
           zip -r lambda_layer.zip python
 
       # --- Lambda関数用: コードをzip ---
-      # 解凍時にsrcフォルダは必要ないので、srcフォルダに移動してからzip化する
       - name: Zip source code
         run: |
-          cd src
-          zip -r lambda_function.zip *
-          mv lambda_function.zip ../lambda_function.zip
+          zip -r lambda_function.zip src/*
 
       # --- AWS 認証 ---
       # https://zenn.dev/azunyan/articles/072b9644c17be9
@@ -80,3 +77,4 @@ jobs:
           aws lambda update-function-configuration \
             --function-name ${{ vars.AWS_LAMBDA_FUNCTION_NAME}} \
             --layers arn:aws:lambda:${{ secrets.AWS_REGION }}:${{ secrets.AWS_ACCOUNT_ID }}:layer:${{ vars.AWS_LAMBDA_LAYER_NAME}}:$LAYER_VERSION
+            -- handler src.lambda_function.lambda_handler

@@ -2,16 +2,18 @@ from typing import Optional
 import json
 from datetime import datetime
 import copy
+import os
 
 import requests
 import boto3
 from botocore.exceptions import ClientError
 
-from asken import Asken
-from fitbit import Fitbit
-from asken_fitbit_sync import AskenFitbitSync
-from const import DAILY_MEAL_TYPE_ID_LIST
-from utils import get_logger
+from .asken import Asken
+from .fitbit import Fitbit
+from .asken_fitbit_sync import AskenFitbitSync
+from .const import DAILY_MEAL_TYPE_ID_LIST
+from .utils import get_logger
+from .mock import FitbitMock
 
 
 logger = get_logger(__name__)
@@ -23,8 +25,17 @@ def get_secret_manager_client():
 
 
 def get_secret():
-    client = get_secret_manager_client()
+    """
+    Get credentials from AWS Secrets Manager or local file based on the environment.
+    Returns:
+        dict: Credentials containing mail, password, client_id, access_token, and refresh_token.
+    """
+    # ローカル開発用
+    if os.environ["ENV"] == "local":
+        with open("src/.credentials.json", "r") as f:
+            return json.load(f)
 
+    client = get_secret_manager_client()
     try:
         get_secret_value_response = client.get_secret_value(SecretId="askenFitbitSync")
     except ClientError as e:
@@ -80,7 +91,10 @@ def main(
     logger.info(f"Syncing food logs for date: {date}")
 
     asken = Asken(mail, password)
-    fitbit = Fitbit(client_id, access_token, refresh_token)
+    if os.environ["ENV"] == "local":
+        fitbit = FitbitMock()
+    else:
+        fitbit = Fitbit(client_id, access_token, refresh_token)
     syncer = AskenFitbitSync(asken, fitbit)
     syncer.sync_food_logs(date, meal_type_id_list)
 
@@ -102,8 +116,8 @@ def lambda_handler(event, context):
             refresh_token=credencials["refresh_token"],
         )
     except requests.exceptions.RequestException as e:
-        logger.error(f"An error occurred: {e}")
+        logger.error(f"An error occurred: {e}", exc_info=True)
     except Exception as e:
-        logger.error(f"An unexpected error occurred: {e}")
-
-    logger.info("Asken-Fitbit sync completed.")
+        logger.error(f"An unexpected error occurred: {e}", exc_info=True)
+    else:
+        logger.info("Asken-Fitbit sync completed.")

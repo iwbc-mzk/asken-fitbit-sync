@@ -4,11 +4,11 @@ import requests
 from requests.exceptions import RequestException
 
 
-from asken import Asken, FoodLog
-from fitbit import Fitbit
-from const import MEAL_TYPES
-from models.fitbit import CreateFoodLogParams, GetFoodLogResponse
-from utils import get_logger
+from .asken import Asken, FoodLog
+from .fitbit import Fitbit
+from .const import MEAL_TYPES
+from .models.fitbit import CreateFoodLogParams, GetFoodLogResponse
+from .utils import get_logger
 
 
 logger = get_logger(__name__)
@@ -31,14 +31,16 @@ def safe_api_call(api_name=""):
                 return func(*args, **kwargs)
             except RequestException as e:
                 logger.error(
-                    f"{api_name} API request error: {e} (func={func.__name__}, args={args}, kwargs={kwargs})"
+                    f"{api_name} API request error: {e} (func={func.__name__}, args={args}, kwargs={kwargs})",
+                    exc_info=True,
                 )
-                return None
+                raise
             except Exception as e:
                 logger.error(
-                    f"Unexpected error in {api_name}: {e} (func={func.__name__}, args={args}, kwargs={kwargs})"
+                    f"Unexpected error in {api_name}: {e} (func={func.__name__}, args={args}, kwargs={kwargs})",
+                    exc_info=True,
                 )
-                return None
+                raise
 
         return wrapper
 
