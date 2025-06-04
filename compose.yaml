@@ -1,0 +1,16 @@
+services:
+  lambda-local:
+    image: public.ecr.aws/lambda/python:3.13
+    command: ["src.lambda_function.lambda_handler"]
+    restart: always
+    environment:
+      ENV: "local"
+    volumes:
+      - ./src:/var/task/src
+      - ./.layer:/opt
+    ports:
+      - "9000:8080"
+    logging:
+      options:
+        max-size: "5m"
+        max-file: "10"
