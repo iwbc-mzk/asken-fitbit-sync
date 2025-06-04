@@ -8,6 +8,7 @@ requests = "*"
 pydantic = "*"
 beautifulsoup4 = "*"
 pyyaml = "*"
+pytest = "*"
 
 [dev-packages]
 
