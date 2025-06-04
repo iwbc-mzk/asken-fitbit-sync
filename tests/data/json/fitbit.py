@@ -39,6 +39,9 @@ GET_FOOD_LOG_RESPONSE_JSON = {
 }
 
 CREATE_FOOD_LOG_PARAMS_JSON = {
+    "mealTypeId": 1,
+    "unitId": 304,
+    "amount": 1,
     "date": "2024-01-01",
     "calories": 1000,
     "totalFat": 100,
