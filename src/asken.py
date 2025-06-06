@@ -1,4 +1,5 @@
 from typing import Optional
+from decimal import Decimal
 
 from bs4 import BeautifulSoup
 import requests
@@ -106,7 +107,7 @@ class Asken:
 
         html = response.text
         if "食事記録が無いためアドバイスが計算できません" in html:
-            return FoodLog()
+            return None
 
         nutritions = self._scrape_food_log(html)
         nutritions["meal_type_id"] = 5  # Set meal type ID for daily log
@@ -125,14 +126,27 @@ class Asken:
         Returns:
             FoodLog: Parsed snack log data.
         """
-        nutritions = self.fetch_daily_food_log(date).model_dump()
+        float_to_decimal = lambda x: Decimal(str(x)) if type(x) == float else x
+
+        daily_log = self.fetch_daily_food_log(date)
+        if not daily_log:
+            return None
+
+        nutritions = {
+            key: float_to_decimal(val) for key, val in daily_log.model_dump().items()
+        }
         nutritions["meal_type_id"] = 4  # Set meal type ID for snack log
 
         for meal_type_id in [1, 2, 3]:
             one_meal_log = self.fetch_one_meal_log(date, meal_type_id)
             if one_meal_log is None:
                 continue
+
             one_meal_log = one_meal_log.model_dump()
+            one_meal_log = {
+                key: float_to_decimal(val) for key, val in one_meal_log.items()
+            }
+
             nutritions["calories"] -= one_meal_log["calories"]
             nutritions["protein"] -= one_meal_log["protein"]
             nutritions["fat"] -= one_meal_log["fat"]
@@ -151,12 +165,18 @@ class Asken:
             nutritions["saturatedFat"] -= one_meal_log["saturatedFat"]
             nutritions["solt"] -= one_meal_log["solt"]
 
+        # あすけんでは1日分の栄養素表示は１日分の栄養素を合計してから小数点１桁まで丸める
+        # 朝食等ではその食事のみの栄養素を小数点１桁で丸めて表示している
+        # そのため１日分の栄養素から各食事分の栄養素を引くと負の値になることがあるため以下で補正する
+        correct = lambda x: Decimal(0.0) if type(x) == Decimal and -1.0 <= x < 0 else x
+        nutritions = {key: correct(val) for key, val in nutritions.items()}
+
         # カロリーまたはPFCが登録されていれば間食ログあり
         exists_log = (
-            round(nutritions["calories"], 3)
-            or round(nutritions["protein"], 3)
-            or round(nutritions["fat"], 3)
-            or round(nutritions["carbs"], 3)
+            nutritions["calories"]
+            or nutritions["protein"]
+            or nutritions["fat"]
+            or nutritions["carbs"]
         )
 
         return FoodLog(**nutritions) if exists_log else None
