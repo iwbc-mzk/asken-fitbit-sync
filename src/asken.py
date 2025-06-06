@@ -107,7 +107,7 @@ class Asken:
 
         html = response.text
         if "食事記録が無いためアドバイスが計算できません" in html:
-            return FoodLog()
+            return None
 
         nutritions = self._scrape_food_log(html)
         nutritions["meal_type_id"] = 5  # Set meal type ID for daily log
@@ -128,9 +128,14 @@ class Asken:
         """
         float_to_decimal = lambda x: Decimal(str(x)) if type(x) == float else x
 
-        nutritions = self.fetch_daily_food_log(date).model_dump()
+        daily_log = self.fetch_daily_food_log(date)
+        if not daily_log:
+            return None
+
+        nutritions = {
+            key: float_to_decimal(val) for key, val in daily_log.model_dump().items()
+        }
         nutritions["meal_type_id"] = 4  # Set meal type ID for snack log
-        nutritions = {key: float_to_decimal(val) for key, val in nutritions.items()}
 
         for meal_type_id in [1, 2, 3]:
             one_meal_log = self.fetch_one_meal_log(date, meal_type_id)

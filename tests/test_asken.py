@@ -3,6 +3,58 @@ from unittest.mock import patch, MagicMock
 
 from src.asken import Asken
 
+ONE_MEAL_LOG_MOCK = MagicMock(
+    model_dump=MagicMock(
+        return_value={
+            "calories": 100,
+            "protein": 9,
+            "fat": 2,
+            "carbs": 20,
+            "calcium": 1,
+            "magnesium": 2,
+            "iron": 3,
+            "zinc": 4,
+            "vitamin_a": 5,
+            "vitamin_d": 6,
+            "vitamin_b1": 3,
+            "vitamin_b2": 10,
+            "vitamin_b6": 2,
+            "vitamin_c": 4,
+            "fiber": 6,
+            "saturatedFat": 7,
+            "solt": 10,
+            "meal_type_id": 1,
+            "date": "2024-01-01",
+        },
+    )
+)
+
+DAILY_MEAL_LOG_MOCK = MagicMock(
+    model_dump=MagicMock(
+        return_value={
+            "calories": 300,
+            "protein": 27,
+            "fat": 6,
+            "carbs": 60,
+            "calcium": 3,
+            "magnesium": 6,
+            "iron": 9,
+            "zinc": 12,
+            "vitamin_a": 15,
+            "vitamin_d": 18,
+            "vitamin_b1": 9,
+            "vitamin_b2": 30,
+            "vitamin_b6": 6,
+            "vitamin_c": 12,
+            "fiber": 18,
+            "saturatedFat": 21,
+            "solt": 30,
+            "meal_type_id": 3,
+            "date": "2024-01-01",
+        },
+    )
+)
+
 
 @pytest.fixture
 def mock_logger():
@@ -143,13 +195,13 @@ class TestAsken:
         assert result.calories == 100
         assert result.logged
 
-    def test_fetch_daily_food_log_no_record(self, mock_session, mock_foodlog):
+    def test_fetch_daily_food_log_no_record(self, mock_session):
         mock_session.return_value.get.return_value.text = (
             "食事記録が無いためアドバイスが計算できません"
         )
         a = Asken("a@b.com", "pw")
         result = a.fetch_daily_food_log("2024-01-01")
-        assert mock_foodlog.called
+        assert result is None
 
     def test_fetch_daily_food_log_http_error(self, mock_session):
         mock_session.return_value.get.return_value.raise_for_status.side_effect = (
@@ -271,95 +323,59 @@ class TestAsken:
 
     @patch.object(Asken, "fetch_daily_food_log")
     @patch.object(Asken, "fetch_one_meal_log")
+    @pytest.mark.parametrize("daily", [None, DAILY_MEAL_LOG_MOCK])
     @pytest.mark.parametrize(
-        "breakfast, lunch, dinner",
-        [
-            (None, None, None),
-            (
-                MagicMock(
-                    return_value=MagicMock(
-                        model_dump=MagicMock(
-                            return_value={
-                                "calories": 90,
-                                "protein": 10,
-                                "fat": 10,
-                                "carbs": 10,
-                                "date": "2024-01-01",
-                            },
-                        )
-                    )
-                ),
-                None,
-                None,
-            ),
-            (
-                None,
-                MagicMock(
-                    return_value=MagicMock(
-                        model_dump=MagicMock(
-                            return_value={
-                                "calories": 300,
-                                "protein": 10,
-                                "fat": 10,
-                                "carbs": 10,
-                                "date": "2024-01-01",
-                            },
-                        )
-                    )
-                ),
-                None,
-            ),
-            (
-                None,
-                None,
-                MagicMock(
-                    return_value=MagicMock(
-                        model_dump=MagicMock(
-                            return_value={
-                                "calories": 300,
-                                "protein": 10,
-                                "fat": 10,
-                                "carbs": 10,
-                                "date": "2024-01-01",
-                            },
-                        )
-                    )
-                ),
-            ),
-        ],
+        "breakfast",
+        [None, ONE_MEAL_LOG_MOCK],
+    )
+    @pytest.mark.parametrize(
+        "lunch",
+        [None, ONE_MEAL_LOG_MOCK],
+    )
+    @pytest.mark.parametrize(
+        "dinner",
+        [None, ONE_MEAL_LOG_MOCK],
     )
     def test_fetch_snack_log_some_meals_none(
-        self, mock_one, mock_daily, mock_foodlog, breakfast, lunch, dinner
+        self, mock_one, mock_daily, daily, breakfast, lunch, dinner
     ):
-        mock_daily.return_value.model_dump.return_value = {
-            "calories": 300,
-            "protein": 30,
-            "fat": 15,
-            "carbs": 60,
-            "calcium": 3,
-            "magnesium": 6,
-            "iron": 9,
-            "zinc": 12,
-            "vitamin_a": 15,
-            "vitamin_d": 18,
-            "vitamin_b1": 21,
-            "vitamin_b2": 24,
-            "vitamin_b6": 27,
-            "vitamin_c": 30,
-            "fiber": 33,
-            "saturatedFat": 36,
-            "solt": 39,
-            "meal_type_id": 5,
-            "date": "2024-01-01",
-        }
+        mock_daily.return_value = daily
         mock_one.side_effect = [breakfast, lunch, dinner]
-        a = Asken("a@b.com", "pw")
-        result = a.fetch_snack_log("2024-01-01")
-        assert result is not None and mock_foodlog.called
+        asken = Asken("a@b.com", "pw")
+        result = asken.fetch_snack_log("2024-01-01")
+
+        if not daily:
+            # 一日分の食事記録なし
+            assert result is None
+            mock_daily.assert_called_once_with("2024-01-01")
+            mock_one.assert_not_called()
+        else:
+            nutritions = daily.model_dump()
+            for log in [breakfast, lunch, dinner]:
+                if not log:
+                    continue
+
+                log_nut = log.model_dump()
+                for key in ["calories", "protein", "fat", "carbs"]:
+                    nutritions[key] -= log_nut[key]
+
+            if (
+                nutritions["calories"]
+                or nutritions["protein"]
+                or nutritions["fat"]
+                or nutritions["carbs"]
+            ):
+                # カロリー、PFCともに0の時
+                assert result is not None
+            else:
+                assert result is None
+                mock_daily.assert_called_once_with("2024-01-01")
+                assert mock_one.call_count == 3
 
     @patch.object(Asken, "fetch_daily_food_log")
     @patch.object(Asken, "fetch_one_meal_log")
     def test_fetch_snack_log_no_snack(self, mock_one, mock_daily, mock_foodlog):
+        """カロリーとPFCが0の時、間食ログがないことを確認"""
         mock_daily.return_value.model_dump.return_value = {
             "calories": 300,
             "protein": 30,
@@ -381,77 +397,31 @@ class TestAsken:
             "meal_type_id": 5,
             "date": "2024-01-01",
         }
-        mock_one.side_effect = [
-            MagicMock(
-                model_dump=MagicMock(
-                    return_value={
-                        "calories": 100,
-                        "protein": 10,
-                        "fat": 10,
-                        "carbs": 10,
-                        "calcium": 1,
-                        "magnesium": 2,
-                        "iron": 3,
-                        "zinc": 4,
-                        "vitamin_a": 5,
-                        "vitamin_d": 6,
-                        "vitamin_b1": 7,
-                        "vitamin_b2": 8,
-                        "vitamin_b6": 9,
-                        "vitamin_c": 10,
-                        "fiber": 11,
-                        "saturatedFat": 12,
-                        "solt": 13,
-                    }
-                )
-            ),
-            MagicMock(
-                model_dump=MagicMock(
-                    return_value={
-                        "calories": 100,
-                        "protein": 10,
-                        "fat": 10,
-                        "carbs": 10,
-                        "calcium": 1,
-                        "magnesium": 2,
-                        "iron": 3,
-                        "zinc": 4,
-                        "vitamin_a": 5,
-                        "vitamin_d": 6,
-                        "vitamin_b1": 7,
-                        "vitamin_b2": 8,
-                        "vitamin_b6": 9,
-                        "vitamin_c": 10,
-                        "fiber": 11,
-                        "saturatedFat": 12,
-                        "solt": 13,
-                    }
-                )
-            ),
-            MagicMock(
-                model_dump=MagicMock(
-                    return_value={
-                        "calories": 100,
-                        "protein": 10,
-                        "fat": 10,
-                        "carbs": 10,
-                        "calcium": 1,
-                        "magnesium": 2,
-                        "iron": 3,
-                        "zinc": 4,
-                        "vitamin_a": 5,
-                        "vitamin_d": 6,
-                        "vitamin_b1": 7,
-                        "vitamin_b2": 8,
-                        "vitamin_b6": 9,
-                        "vitamin_c": 10,
-                        "fiber": 11,
-                        "saturatedFat": 12,
-                        "solt": 13,
-                    }
-                )
-            ),
-        ]
+
+        one_meal_mock = MagicMock(
+            model_dump=MagicMock(
+                return_value={
+                    "calories": 100,
+                    "protein": 10,
+                    "fat": 10,
+                    "carbs": 10,
+                    "calcium": 1,
+                    "magnesium": 2,
+                    "iron": 3,
+                    "zinc": 4,
+                    "vitamin_a": 5,
+                    "vitamin_d": 6,
+                    "vitamin_b1": 7,
+                    "vitamin_b2": 8,
+                    "vitamin_b6": 9,
+                    "vitamin_c": 10,
+                    "fiber": 11,
+                    "saturatedFat": 12,
+                    "solt": 13,
+                }
+            )
+        )
+        mock_one.side_effect = [one_meal_mock, one_meal_mock, one_meal_mock]
         a = Asken("a@b.com", "pw")
         result = a.fetch_snack_log("2024-01-01")
         assert result is None and not mock_foodlog.called
