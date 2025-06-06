@@ -71,6 +71,11 @@ jobs:
             --function-name ${{ vars.AWS_LAMBDA_FUNCTION_NAME}} \
             --zip-file fileb://lambda_function.zip
 
+      # --- Lambda関数デプロイの完了待ち --
+      # https://github.com/iwbc-mzk/asken-fitbit-sync/issues/9
+      - name: Sleep
+        run: sleep 5
+
       # --- Lambda関数にLayerをアタッチ ---
       - name: Update Lambda function to use new Layer
         run: |
