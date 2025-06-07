@@ -8,9 +8,11 @@ requests = "*"
 pydantic = "*"
 beautifulsoup4 = "*"
 pyyaml = "*"
-pytest = "*"
 
 [dev-packages]
+mypy = "*"
+pytest = "*"
+types-pyyaml = "*"
 
 [requires]
 python_version = "3.13"
