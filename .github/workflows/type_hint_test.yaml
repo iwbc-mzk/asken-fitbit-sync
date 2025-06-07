@@ -28,7 +28,8 @@ jobs:
       - name: Install dependencies
         run: |
           pipenv install --dev
+          pipenv graph
 
       - name: Test with mypy
         run: |
-          pipenv run mypy src
+          pipenv run mypy src -v
