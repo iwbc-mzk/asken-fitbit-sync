@@ -48,7 +48,9 @@ class Asken:
 
         return session
 
-    def fetch_food_log(self, date: str, meal_type_id: Optional[int] = None) -> FoodLog:
+    def fetch_food_log(
+        self, date: str, meal_type_id: Optional[int] = None
+    ) -> Optional[FoodLog]:
         """
         Fetch food log for a specific date.
         Args:
@@ -63,8 +65,10 @@ class Asken:
             return self.fetch_snack_log(date)
         elif meal_type_id == 5:
             return self.fetch_daily_food_log(date)
+        else:
+            return None
 
-    def fetch_one_meal_log(self, date: str, meal_type_id: int) -> FoodLog:
+    def fetch_one_meal_log(self, date: str, meal_type_id: int) -> Optional[FoodLog]:
         """
         Fetch one meal log for a specific date and meal type.
         Args:
@@ -93,7 +97,7 @@ class Asken:
 
         return food_log
 
-    def fetch_daily_food_log(self, date: str) -> FoodLog:
+    def fetch_daily_food_log(self, date: str) -> Optional[FoodLog]:
         """
         Fetch daily food log for a specific date.
         Args:
@@ -118,7 +122,7 @@ class Asken:
 
         return food_log
 
-    def fetch_snack_log(self, date: str) -> FoodLog:
+    def fetch_snack_log(self, date: str) -> Optional[FoodLog]:
         """
         Fetch snack log for a specific date.
         Args:
@@ -138,11 +142,11 @@ class Asken:
         nutritions["meal_type_id"] = 4  # Set meal type ID for snack log
 
         for meal_type_id in [1, 2, 3]:
-            one_meal_log = self.fetch_one_meal_log(date, meal_type_id)
-            if one_meal_log is None:
+            one_meal_log_raw = self.fetch_one_meal_log(date, meal_type_id)
+            if one_meal_log_raw is None:
                 continue
 
-            one_meal_log = one_meal_log.model_dump()
+            one_meal_log = one_meal_log_raw.model_dump()
             one_meal_log = {
                 key: float_to_decimal(val) for key, val in one_meal_log.items()
             }
@@ -179,7 +183,7 @@ class Asken:
             or nutritions["carbs"]
         )
 
-        return FoodLog(**nutritions) if exists_log else None
+        return FoodLog(**nutritions) if exists_log else None  # type: ignore
 
     def _scrape_food_log(self, html: str) -> dict:
         """
@@ -190,11 +194,11 @@ class Asken:
             FoodLog: Parsed food log data.
         """
         soup = BeautifulSoup(html, "html.parser")
-        nutritions = {"date": ""}
+        nutritions: dict[str, str | float] = {"date": ""}
         nutritions_ele = soup.find_all("li", class_="line_left")
         for nutrition_ele in nutritions_ele:
             nutrition_name = nutrition_ele.find("li", class_="title").text.strip()
-            nutrition_value = nutrition_ele.find("li", class_="val").text.strip()
+            nutrition_value: str = nutrition_ele.find("li", class_="val").text.strip()
 
             if nutrition_name in NUTRITIONS:
                 nutritions[NUTRITIONS[nutrition_name]] = remove_unit(nutrition_value)

@@ -14,8 +14,8 @@ from src.utils import get_logger
 logger = get_logger(__name__)
 
 
-class RefreshTokenCallback(Protocol):
-    def __call__(self, access_token: str, refresh_token: str): ...
+type access_token = str
+type refresh_token = str
 
 
 class Fitbit:
@@ -26,12 +26,12 @@ class Fitbit:
         refresh_token: str,
         auto_token_refresh: bool = True,
         callback_on_token_refreshed: Optional[
-            Callable[[RefreshTokenCallback], Any]
+            Callable[[access_token, refresh_token], Any]
         ] = None,
     ):
         self._client_id = client_id
-        self._access_token = access_token
-        self._refresh_token = refresh_token
+        self._access_token: str = access_token
+        self._refresh_token: str = refresh_token
         self._auto_token_refresh = auto_token_refresh
         self._callback_on_token_refreshed = callback_on_token_refreshed
         self._host = "https://api.fitbit.com"
@@ -43,7 +43,11 @@ class Fitbit:
                 try:
                     return func(self, *args, **kwargs)
                 except requests.exceptions.RequestException as e:
-                    if e.response.status_code == 401 and self._auto_token_refresh:
+                    if (
+                        e.response
+                        and e.response.status_code == 401
+                        and self._auto_token_refresh
+                    ):
                         logger.warning("Access token expired, refreshing...")
 
                         self.refresh_access_token()

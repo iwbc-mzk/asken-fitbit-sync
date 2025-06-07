@@ -53,7 +53,7 @@ class AskenFitbitSync:
         self._fitbit = fitbit
 
     @safe_api_call("Asken")
-    def fetch_asken_food_log(self, date: str, meal_type_id: int) -> FoodLog:
+    def fetch_asken_food_log(self, date: str, meal_type_id: int) -> Optional[FoodLog]:
         """
         Fetch food log from Asken for a specific date and meal type.
         Args:
@@ -65,7 +65,7 @@ class AskenFitbitSync:
         return self._asken.fetch_food_log(date, meal_type_id)
 
     @safe_api_call("Fitbit")
-    def fetch_fitbit_food_log(self, date: str) -> GetFoodLogResponse:
+    def fetch_fitbit_food_log(self, date: str) -> Optional[GetFoodLogResponse]:
         """
         Fetch food log from Fitbit for a specific date.
         Args:

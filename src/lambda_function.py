@@ -5,8 +5,8 @@ import copy
 import os
 
 import requests
-import boto3
-from botocore.exceptions import ClientError
+import boto3  # type: ignore
+from botocore.exceptions import ClientError  # type: ignore
 
 from .asken import Asken
 from .fitbit import Fitbit
@@ -53,13 +53,13 @@ def main(
     client_id: str,
     access_token: str,
     refresh_token: str,
-    meal_type_id_list: Optional[list[int]] = DAILY_MEAL_TYPE_ID_LIST,
+    meal_type_id_list: list[int] = DAILY_MEAL_TYPE_ID_LIST,
 ):
     logger.info(f"Syncing food logs for date: {date}")
 
     asken = Asken(mail, password)
     if os.environ["ENV"] == "local":
-        fitbit = FitbitMock()
+        fitbit: Fitbit = FitbitMock()
     else:
         fitbit = Fitbit(client_id, access_token, refresh_token)
     syncer = AskenFitbitSync(asken, fitbit)
