@@ -197,8 +197,8 @@ class Asken:
         nutritions: dict[str, str | float] = {"date": ""}
         nutritions_ele = soup.find_all("li", class_="line_left")
         for nutrition_ele in nutritions_ele:
-            nutrition_name = nutrition_ele.find("li", class_="title").text.strip()
-            nutrition_value: str = nutrition_ele.find("li", class_="val").text.strip()
+            nutrition_name = nutrition_ele.find("li", class_="title").text.strip()  # type: ignore
+            nutrition_value: str = nutrition_ele.find("li", class_="val").text.strip()  # type: ignore
 
             if nutrition_name in NUTRITIONS:
                 nutritions[NUTRITIONS[nutrition_name]] = remove_unit(nutrition_value)
