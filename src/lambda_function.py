@@ -46,39 +46,6 @@ def get_secret():
     return json.loads(get_secret_value_response["SecretString"])
 
 
-def retry_after_refresh_token(func):
-    def wrapped(*args, **kwargs):
-        try:
-            func(*args, **kwargs)
-        except requests.exceptions.RequestException as e:
-            if e.response.status_code == 401:
-                logger.warning("Access token expired, refreshing...")
-
-                client = get_secret_manager_client()
-
-                fitbit = Fitbit(
-                    kwargs["client_id"], kwargs["access_token"], kwargs["refresh_token"]
-                )
-                response = fitbit.refresh_access_token()
-                kwargs["access_token"] = response["access_token"]
-                kwargs["refresh_token"] = response["refresh_token"]
-
-                secrets = copy.deepcopy(kwargs)
-                del secrets["date"]
-                client.update_secret(
-                    SecretId="askenFitbitSync", SecretString=json.dumps(secrets)
-                )
-
-                logger.info("Access token refreshed successfully.")
-
-                func(*args, **kwargs)
-            else:
-                raise e
-
-    return wrapped
-
-
-@retry_after_refresh_token
 def main(
     date: str,
     mail: str,
