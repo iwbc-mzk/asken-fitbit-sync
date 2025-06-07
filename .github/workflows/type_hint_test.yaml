@@ -1,4 +1,4 @@
-name: Unit Test
+name: Type Hint Test
 
 on:
   pull_request:
@@ -9,7 +9,7 @@ permissions:
   contents: read
 
 jobs:
-  test:
+  type-hint-test:
     runs-on: ubuntu-latest
 
     steps:
@@ -29,6 +29,6 @@ jobs:
         run: |
           pipenv install --dev
 
-      - name: Test with pytest
+      - name: Test with mypy
         run: |
-          pipenv run pytest
+          pipenv run mypy src

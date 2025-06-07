@@ -5,8 +5,8 @@ import copy
 import os
 
 import requests
-import boto3
-from botocore.exceptions import ClientError
+import boto3  # type: ignore
+from botocore.exceptions import ClientError  # type: ignore
 
 from .asken import Asken
 from .fitbit import Fitbit
@@ -46,39 +46,6 @@ def get_secret():
     return json.loads(get_secret_value_response["SecretString"])
 
 
-def retry_after_refresh_token(func):
-    def wrapped(*args, **kwargs):
-        try:
-            func(*args, **kwargs)
-        except requests.exceptions.RequestException as e:
-            if e.response.status_code == 401:
-                logger.warning("Access token expired, refreshing...")
-
-                client = get_secret_manager_client()
-
-                fitbit = Fitbit(
-                    kwargs["client_id"], kwargs["access_token"], kwargs["refresh_token"]
-                )
-                response = fitbit.refresh_access_token()
-                kwargs["access_token"] = response["access_token"]
-                kwargs["refresh_token"] = response["refresh_token"]
-
-                secrets = copy.deepcopy(kwargs)
-                del secrets["date"]
-                client.update_secret(
-                    SecretId="askenFitbitSync", SecretString=json.dumps(secrets)
-                )
-
-                logger.info("Access token refreshed successfully.")
-
-                func(*args, **kwargs)
-            else:
-                raise e
-
-    return wrapped
-
-
-@retry_after_refresh_token
 def main(
     date: str,
     mail: str,
@@ -86,13 +53,13 @@ def main(
     client_id: str,
     access_token: str,
     refresh_token: str,
-    meal_type_id_list: Optional[list[int]] = DAILY_MEAL_TYPE_ID_LIST,
+    meal_type_id_list: list[int] = DAILY_MEAL_TYPE_ID_LIST,
 ):
     logger.info(f"Syncing food logs for date: {date}")
 
     asken = Asken(mail, password)
     if os.environ["ENV"] == "local":
-        fitbit = FitbitMock()
+        fitbit: Fitbit = FitbitMock()
     else:
         fitbit = Fitbit(client_id, access_token, refresh_token)
     syncer = AskenFitbitSync(asken, fitbit)
