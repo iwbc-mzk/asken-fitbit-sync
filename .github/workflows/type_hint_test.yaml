@@ -1,4 +1,4 @@
-name: Test
+name: Type Hint Test
 
 on:
   pull_request:
