@@ -44,7 +44,8 @@ class Fitbit:
                     return func(self, *args, **kwargs)
                 except requests.exceptions.RequestException as e:
                     if (
-                        e.response
+                        # requests.Responseのbool変換値はステータスコードが400未満の時にTrueになるため以下のように存在チェックする必要あり
+                        e.response is not None
                         and e.response.status_code == 401
                         and self._auto_token_refresh
                     ):
