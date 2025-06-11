@@ -253,13 +253,13 @@ class TestFitbit:
     # ===== Delete Food Log =====
     def test_delete_food_log_success(self, fitbit: Fitbit, mock_delete: MagicMock):
         food_log_id = 123
-        mock_json = {}
+        mock_response = MagicMock()
 
-        mock_delete.return_value.json.return_value = mock_json
+        mock_delete.return_value = mock_response
         mock_delete.return_value.raise_for_status = MagicMock()
 
         result = fitbit.delete_food_log(food_log_id)
-        assert result == mock_json
+        assert result == mock_response
 
         requested_url = mock_delete.call_args[0][0]
         assert (
@@ -289,13 +289,14 @@ class TestFitbit:
 
         # 初回実行時は認証エラー(401エラー)を起こし、2回目はトークンリフレッシュ後に実行される想定のため正常終了させる
         err_msg = "Auth Error"
+        mock_delete.return_value = mock_response
         mock_delete.return_value.raise_for_status.side_effect = [
             HTTPError(err_msg, response=MagicMock(status_code=401)),
             lambda: ...,
             lambda: ...,
         ]
+
         mock_post.return_value.json.return_value = REFRESH_ACCESS_TOKEN_RESPONSE
-        mock_delete.return_value.json.return_value = mock_response
 
         if auto_token_refresh:
             # 自動トークンリフレッシュ有の場合
