@@ -46,6 +46,18 @@ def get_secret():
     return json.loads(get_secret_value_response["SecretString"])
 
 
+def refresh_token_callback(access_token: str, refresh_token: str):
+    logger.debug("Refreshing token callback start.")
+    client = get_secret_manager_client()
+    credencials = get_secret()
+    credencials["access_token"] = access_token
+    credencials["refresh_token"] = refresh_token
+    client.update_secret(
+        SecretId="askenFitbitSync", SecretString=json.dumps(credencials)
+    )
+    logger.debug("Refreshing token callback end.")
+
+
 def main(
     date: str,
     mail: str,
@@ -61,7 +73,12 @@ def main(
     if os.environ["ENV"] == "local":
         fitbit: Fitbit = FitbitMock()
     else:
-        fitbit = Fitbit(client_id, access_token, refresh_token)
+        fitbit = Fitbit(
+            client_id,
+            access_token,
+            refresh_token,
+            callback_on_token_refreshed=refresh_token_callback,
+        )
     syncer = AskenFitbitSync(asken, fitbit)
     syncer.sync_food_logs(date, meal_type_id_list)
 
