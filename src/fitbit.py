@@ -118,7 +118,7 @@ class Fitbit:
         response = requests.delete(url, headers=headers)
         response.raise_for_status()
 
-        return response.json()
+        return response
 
     def refresh_access_token(self) -> dict:
         url = f"{self._host}/oauth2/token"
