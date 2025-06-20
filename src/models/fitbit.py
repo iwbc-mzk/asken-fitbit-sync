@@ -60,7 +60,7 @@ class Summary(BaseModel):
 
 class GetFoodLogResponse(BaseModel):
     foods: list[Food]
-    goals: Goal
+    goals: Optional[Goal] = None
     summary: Summary
 
 
